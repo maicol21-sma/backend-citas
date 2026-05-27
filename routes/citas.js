@@ -1,90 +1,233 @@
 const express = require("express");
+
 const router = express.Router();
+
 const db = require("../db");
 
+
+// =============================
+// OBTENER CITAS
+// =============================
 router.get("/", (req, res) => {
 
   const sql = `
+
     SELECT
+
       citas.id,
+
+      citas.paciente_id,
+      citas.medico_id,
+      citas.consultorio_id,
+
       pacientes.nombre AS paciente,
+
       medicos.nombre AS medico,
-      medicos.especialidad,
+
+      consultorios.numero AS consultorio,
+
       citas.fecha,
       citas.hora,
-      citas.motivo,
       citas.estado
 
     FROM citas
 
     INNER JOIN pacientes
-    ON citas.paciente_id = pacientes.id
+      ON citas.paciente_id = pacientes.id
 
     INNER JOIN medicos
-    ON citas.medico_id = medicos.id
+      ON citas.medico_id = medicos.id
+
+    INNER JOIN consultorios
+      ON citas.consultorio_id = consultorios.id
+
   `;
 
-  db.query(sql, (err, result) => {
+  db.query(sql, (err, results) => {
+
     if (err) {
-      res.status(500).json(err);
-    } else {
-      res.json(result);
+
+      console.log(err);
+
+      return res.status(500).json(err);
+
     }
+
+    res.json(results);
+
   });
+
 });
 
+
+// =============================
+// CREAR CITA
+// =============================
 router.post("/", (req, res) => {
 
   const {
+
     paciente_id,
     medico_id,
+    consultorio_id,
+
     fecha,
     hora,
-    motivo,
+
     estado
+
   } = req.body;
 
-  const sql = `
-    INSERT INTO citas
-    (paciente_id, medico_id, fecha, hora, motivo, estado)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
 
-  db.query(
-    sql,
-    [
+  const sql = `
+
+    INSERT INTO citas
+
+    (
       paciente_id,
       medico_id,
+      consultorio_id,
       fecha,
       hora,
-      motivo,
       estado
+    )
+
+    VALUES (?, ?, ?, ?, ?, ?)
+
+  `;
+
+
+  db.query(
+
+    sql,
+
+    [
+
+      paciente_id,
+      medico_id,
+      consultorio_id,
+
+      fecha,
+      hora,
+
+      estado
+
     ],
+
     (err, result) => {
 
       if (err) {
+
+        console.log(err);
+
         res.status(500).json(err);
+
       } else {
+
         res.json({
-          mensaje: "Cita creada correctamente"
+
+          mensaje: "Cita guardada"
+
         });
+
       }
+
     }
+
   );
+
 });
-const {
-  obtenerCitas,
-  crearCita,
-  actualizarCita,
-  eliminarCita,
-} = require("../controllers/citasController");
+router.put("/:id", (req, res) => {
 
-router.get("/", obtenerCitas);
+  const { paciente_id, medico_id, consultorio_id, fecha, hora, estado } = req.body;
 
-router.post("/", crearCita);
+  const sql = `
 
-router.put("/:id", actualizarCita);
+    UPDATE citas
+    SET
 
-router.delete("/:id", eliminarCita);
+      paciente_id = ?,
+      medico_id = ?,
+      consultorio_id = ?,
+      fecha = ?,
+      hora = ?,
+      estado = ?
+
+    WHERE id = ?
+
+  `;
+
+  db.query(
+
+    sql,
+
+    [
+      paciente_id,
+      medico_id,
+      consultorio_id,
+      fecha,
+      hora,
+      estado,
+      req.params.id
+    ],
+
+    (err, result) => {
+
+      if (err) {
+
+        console.log(err);
+
+        return res.status(500).json(err);
+
+      }
+
+      res.json(result);
+
+    }
+
+  );
+
+});
+
+// =============================
+// ELIMINAR
+// =============================
+router.delete("/:id", (req, res) => {
+
+  const sql = `
+    DELETE FROM citas
+    WHERE id = ?
+  `;
+
+  db.query(
+
+    sql,
+
+    [req.params.id],
+
+    (err, result) => {
+
+      if (err) {
+
+        console.log(err);
+
+        res.status(500).json(err);
+
+      } else {
+
+        res.json({
+
+          mensaje: "Cita eliminada"
+
+        });
+
+      }
+
+    }
+
+  );
+
+});
+
 
 module.exports = router;
